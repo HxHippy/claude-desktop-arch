@@ -12,7 +12,7 @@
 > Install, update, and fully run Anthropic's **official** Claude Desktop — sign-in and Cowork's local VM included — on Arch Linux, verified against Anthropic's GPG signature.
 
 <p align="center">
-  <img alt="Terminal recording: the updater verifying Anthropic's GPG signature and package index before install" src="assets/demo.svg" width="640">
+  <img alt="Terminal recording: the updater verifying Anthropic's GPG signature and package index before install" src="assets/demo.gif" width="720">
 </p>
 
 ## TL;DR
