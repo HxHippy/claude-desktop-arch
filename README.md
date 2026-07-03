@@ -1,5 +1,47 @@
 # Claude Desktop on Arch Linux
 
+<p align="center">
+  <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg">
+  <img alt="Platform: Arch Linux" src="https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=archlinux&logoColor=white">
+  <img alt="Arch: x86_64" src="https://img.shields.io/badge/arch-x86__64%20tested-informational">
+  <img alt="Shell: Bash" src="https://img.shields.io/badge/shell-Bash-4EAA25?logo=gnubash&logoColor=white">
+  <img alt="Install: GPG verified" src="https://img.shields.io/badge/install-GPG%20verified-success">
+  <img alt="Status: unofficial" src="https://img.shields.io/badge/status-unofficial-orange">
+</p>
+
+> Install, update, and fully run Anthropic's **official** Claude Desktop — sign-in and Cowork's local VM included — on Arch Linux, verified against Anthropic's GPG signature.
+
+## TL;DR
+
+```sh
+git clone https://github.com/HxHippy/claude-desktop-arch
+cd claude-desktop-arch
+./update-claude-desktop.sh   # install — and re-run any time to update
+./setup-cowork.sh            # only if you want Cowork's local VM
+```
+
+- Installs Anthropic's official `.deb` on Arch with no `apt`/`dpkg`.
+- **GPG-verified and signature-chained** — never a bare checksum.
+- Keeps the Chromium **sandbox on**; stores your sign-in in the **encrypted keyring**, not plaintext.
+- Fixes Cowork by mapping Arch's QEMU/OVMF/virtiofsd paths to the ones the app expects.
+- Verified on Arch x86_64 — read [what's tested vs. what isn't](#whats-tested-vs-what-isnt) before running.
+
+## Contents
+
+- [Why this exists](#why-this-exists)
+- [What's here](#whats-here)
+- [Install](#install)
+- [How the install works](#how-the-install-works)
+- [The keyring fix](#the-keyring-fix)
+- [Cowork (local VM)](#cowork-local-vm)
+- [What's tested vs. what isn't](#whats-tested-vs-what-isnt)
+- [Requirements](#requirements)
+- [Uninstall](#uninstall)
+- [Disclaimer](#disclaimer)
+- [License](#license)
+
+## Why this exists
+
 Anthropic ships [Claude Desktop for Linux](https://code.claude.com/docs) as a Debian/Ubuntu `.deb` behind an apt repository. Arch has no `apt` or `dpkg`, so the documented install does nothing here.
 
 This repo installs the **official** package anyway — verified against Anthropic's GPG signature, not just a checksum — and fixes the two things that break on a non-Debian, non-GNOME/KDE system: **keyring-backed sign-in** and **Cowork's local VM**.
