@@ -48,7 +48,7 @@ cd claude-desktop-arch
 
 ## Why this exists
 
-Anthropic ships [Claude Desktop for Linux](https://code.claude.com/docs) as a Debian/Ubuntu `.deb` behind an apt repository. Arch has no `apt` or `dpkg`, so the documented install does nothing here.
+Anthropic ships [Claude Desktop for Linux](https://code.claude.com/docs/en/desktop-linux) as a Debian/Ubuntu `.deb` behind an apt repository. Arch has no `apt` or `dpkg`, so the documented install does nothing here.
 
 This repo installs the **official** package anyway — verified against Anthropic's GPG signature, not just a checksum — and fixes the two things that break on a non-Debian, non-GNOME/KDE system: **keyring-backed sign-in** and **Cowork's local VM**.
 
