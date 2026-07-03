@@ -113,7 +113,7 @@ echo "   InRelease signature OK"
 PKG_PATH="main/binary-$ARCH/Packages"
 read -r PKG_SHA PKG_SIZE < <(
   awk -v p="$PKG_PATH" '$3==p && length($1)==64 {print $1, $2; exit}' "$TMP/Release"
-)
+) || true
 [[ -n "${PKG_SHA:-}" ]] || { echo "FATAL: $PKG_PATH not found in signed Release." >&2; exit 1; }
 
 echo ">> Fetching + verifying package index ..."
@@ -135,12 +135,15 @@ read -r VERSION FILENAME SHA256 < <(
       if (ver!="") print ver "\t" fn "\t" sha
     }' "$TMP/Packages" \
   | sort -V | tail -n1 | awk -F'\t' '{print $1, $2, $3}'
-)
+) || true
 [[ -n "${VERSION:-}" && -n "${FILENAME:-}" && -n "${SHA256:-}" ]] \
   || { echo "FATAL: could not parse latest version from index." >&2; exit 1; }
 
-# Sanitise fields before they ever reach a shell / sudo context.
-[[ "$VERSION"  =~ ^[0-9][0-9.]*$ ]]                 || { echo "FATAL: refusing suspicious version '$VERSION'." >&2; exit 1; }
+# Sanitise fields before they ever reach a shell / sudo context. The character
+# classes deliberately exclude quotes, $, backtick, backslash, and whitespace,
+# so a hostile index cannot break out of the double-quoted sudo assignment.
+# A Debian revision suffix (-N) is allowed; everything else is refused.
+[[ "$VERSION"  =~ ^[0-9][0-9A-Za-z.+~]*(-[0-9A-Za-z.+~]+)?$ ]] || { echo "FATAL: refusing suspicious version '$VERSION'." >&2; exit 1; }
 [[ "$SHA256"   =~ ^[0-9a-f]{64}$ ]]                 || { echo "FATAL: refusing suspicious sha256." >&2; exit 1; }
 [[ "$FILENAME" =~ ^pool/[A-Za-z0-9._/+-]+\.deb$ ]]  || { echo "FATAL: refusing suspicious filename '$FILENAME'." >&2; exit 1; }
 
