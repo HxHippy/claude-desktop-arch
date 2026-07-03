@@ -12,7 +12,7 @@
 > Install, update, and fully run Anthropic's **official** Claude Desktop — sign-in and Cowork's local VM included — on Arch Linux, verified against Anthropic's GPG signature.
 
 <p align="center">
-  <img alt="Terminal recording: the updater verifying Anthropic's GPG signature and package index before install" src="assets/demo.gif" width="720">
+  <img alt="Terminal recording: a fresh install — verifying Anthropic's GPG signature and package index, downloading, then installing" src="assets/install.gif" width="760">
 </p>
 
 ## TL;DR
@@ -69,12 +69,16 @@ cd claude-desktop-arch
 
 Then launch from your app menu or run `claude-desktop`, and sign in.
 
-To update later, just run it again — it no-ops if you're already on the latest build:
+To update later, just run it again — it re-verifies the signature chain and no-ops if you're already on the latest build:
 
 ```sh
 ./update-claude-desktop.sh          # upgrade if a newer version exists
 ./update-claude-desktop.sh --force  # reinstall the current version
 ```
+
+<p align="center">
+  <img alt="Terminal recording: re-running the updater, which verifies the signature and reports it is already up to date" src="assets/update.gif" width="760">
+</p>
 
 A handy alias:
 

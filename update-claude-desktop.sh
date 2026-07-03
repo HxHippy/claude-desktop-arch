@@ -51,6 +51,17 @@ esac
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing required tool: $1" >&2; exit 1; }; }
 need curl; need ar; need tar; need sha256sum; need gpg; need awk
 
+# Colour ONLY when stdout is a terminal -- never leak escape codes into pipes,
+# redirects, or logs. When redirected, every variable below is empty.
+if [[ -t 1 ]]; then
+  B=$'\e[1;34m'; G=$'\e[1;32m'; Y=$'\e[0;33m'; R=$'\e[1;31m'; Z=$'\e[0m'
+else
+  B=''; G=''; Y=''; R=''; Z=''
+fi
+h()   { printf '%s>>%s %s\n' "$B" "$Z" "$*"; }          # step heading
+ok()  { printf '   %s%s%s\n' "$G" "$*" "$Z"; }          # success / status
+die() { printf '%sFATAL:%s %s\n' "$R" "$Z" "$*" >&2; exit 1; }
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -99,28 +110,27 @@ if [[ "$GOT_FPR" != "$EXPECT_FPR" ]]; then
 fi
 
 # --- verify the signed InRelease with ONLY that key -------------------------
-echo ">> Verifying repository signature ..."
+h "Verifying repository signature ..."
 curl -fsSL "$REPO/dists/stable/InRelease" -o "$TMP/InRelease"
 if ! gpg --batch --status-fd 3 --decrypt "$TMP/InRelease" \
         3>"$TMP/gpgstatus" >"$TMP/Release" 2>/dev/null \
    || ! grep -q '^\[GNUPG:\] VALIDSIG' "$TMP/gpgstatus"; then
-  echo "FATAL: InRelease signature did not verify against Anthropic's key." >&2
-  exit 1
+  die "InRelease signature did not verify against Anthropic's key."
 fi
-echo "   InRelease signature OK"
+ok "InRelease signature OK"
 
 # --- pull the SHA256 of the Packages index from the SIGNED Release ----------
 PKG_PATH="main/binary-$ARCH/Packages"
 read -r PKG_SHA PKG_SIZE < <(
   awk -v p="$PKG_PATH" '$3==p && length($1)==64 {print $1, $2; exit}' "$TMP/Release"
 ) || true
-[[ -n "${PKG_SHA:-}" ]] || { echo "FATAL: $PKG_PATH not found in signed Release." >&2; exit 1; }
+[[ -n "${PKG_SHA:-}" ]] || die "$PKG_PATH not found in signed Release."
 
-echo ">> Fetching + verifying package index ..."
+h "Fetching + verifying package index ..."
 curl -fsSL "$REPO/dists/stable/$PKG_PATH" -o "$TMP/Packages"
 echo "$PKG_SHA  $TMP/Packages" | sha256sum -c - >/dev/null \
-  || { echo "FATAL: Packages index hash does not match signed Release." >&2; exit 1; }
-echo "   Packages index authenticated"
+  || die "Packages index hash does not match signed Release."
+ok "Packages index authenticated"
 
 # --- pick the newest version and its .deb hash from the trusted index -------
 read -r VERSION FILENAME SHA256 < <(
@@ -137,42 +147,42 @@ read -r VERSION FILENAME SHA256 < <(
   | sort -V | tail -n1 | awk -F'\t' '{print $1, $2, $3}'
 ) || true
 [[ -n "${VERSION:-}" && -n "${FILENAME:-}" && -n "${SHA256:-}" ]] \
-  || { echo "FATAL: could not parse latest version from index." >&2; exit 1; }
+  || die "could not parse latest version from index."
 
 # Sanitise fields before they ever reach a shell / sudo context. The character
 # classes deliberately exclude quotes, $, backtick, backslash, and whitespace,
 # so a hostile index cannot break out of the double-quoted sudo assignment.
 # A Debian revision suffix (-N) is allowed; everything else is refused.
-[[ "$VERSION"  =~ ^[0-9][0-9A-Za-z.+~]*(-[0-9A-Za-z.+~]+)?$ ]] || { echo "FATAL: refusing suspicious version '$VERSION'." >&2; exit 1; }
-[[ "$SHA256"   =~ ^[0-9a-f]{64}$ ]]                 || { echo "FATAL: refusing suspicious sha256." >&2; exit 1; }
-[[ "$FILENAME" =~ ^pool/[A-Za-z0-9._/+-]+\.deb$ ]]  || { echo "FATAL: refusing suspicious filename '$FILENAME'." >&2; exit 1; }
+[[ "$VERSION"  =~ ^[0-9][0-9A-Za-z.+~]*(-[0-9A-Za-z.+~]+)?$ ]] || die "refusing suspicious version '$VERSION'."
+[[ "$SHA256"   =~ ^[0-9a-f]{64}$ ]]                 || die "refusing suspicious sha256."
+[[ "$FILENAME" =~ ^pool/[A-Za-z0-9._/+-]+\.deb$ ]]  || die "refusing suspicious filename '$FILENAME'."
 
-echo ">> Latest available: $VERSION"
+h "Latest available: ${Y}${VERSION}${Z}"
 STAMP="$DEST/.app-version"
 INSTALLED="$(cat "$STAMP" 2>/dev/null || echo none)"
-echo ">> Currently installed: $INSTALLED"
+h "Currently installed: ${Y}${INSTALLED}${Z}"
 if [[ "$INSTALLED" == "$VERSION" && $FORCE -eq 0 ]]; then
-  echo ">> Already up to date. Use --force to reinstall."
+  ok "Already up to date. Use --force to reinstall."
   exit 0
 fi
 
 DEB="$TMP/$(basename "$FILENAME")"
-echo ">> Downloading $(basename "$FILENAME") ..."
-curl -fSL -o "$DEB" "$REPO/$FILENAME"
-echo ">> Verifying .deb SHA256 (chained to signed Release) ..."
+h "Downloading $(basename "$FILENAME") ..."
+curl -fSL -# -o "$DEB" "$REPO/$FILENAME"
+h "Verifying .deb SHA256 (chained to signed Release) ..."
 echo "$SHA256  $DEB" | sha256sum -c - >/dev/null
-echo "   OK"
+ok "OK"
 
-echo ">> Extracting ..."
+h "Extracting ..."
 ( cd "$TMP" && ar x "$DEB" && tar -xf data.tar.* )
 
 if pgrep -f "$DEST/claude-desktop" >/dev/null 2>&1; then
-  echo ">> Stopping running Claude Desktop ..."
+  h "Stopping running Claude Desktop ..."
   pkill -f "$DEST/claude-desktop" || true
   sleep 1
 fi
 
-echo ">> Installing to $DEST (needs sudo) ..."
+h "Installing to $DEST (needs sudo) ..."
 sudo bash -euc '
   DEST="'"$DEST"'"; SRC="'"$TMP"'/usr"; VERSION="'"$VERSION"'"
   BIN="'"$BIN"'"; APPDIR="'"$APPDIR"'"; ICONROOT="'"$ICONROOT"'"
@@ -204,7 +214,7 @@ EOF
 '
 
 SB="$(stat -c '%A %U:%G' "$DEST/chrome-sandbox")"
-echo ">> chrome-sandbox: $SB"
-[[ "$SB" == -rws* ]] || echo ">> WARNING: setuid bit missing on chrome-sandbox"
-echo ">> Installed Claude Desktop $VERSION"
-echo ">> Launch with: claude-desktop"
+h "chrome-sandbox: $SB"
+[[ "$SB" == -rws* ]] || printf '%sWARNING:%s setuid bit missing on chrome-sandbox\n' "$R" "$Z"
+ok "Installed Claude Desktop ${VERSION}"
+h "Launch with: ${Y}claude-desktop${Z}"
