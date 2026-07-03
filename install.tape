@@ -3,6 +3,13 @@
 # (sudo is pre-authorised so the install step doesn't prompt mid-recording;
 #  no password is stored here. Stage a fresh install first:
 #  sudo rm -rf /opt/claude-desktop)
+#
+# NOTE: this run is long enough to exceed LinkedIn's 400-frame GIF cap, so the
+# committed assets/install.gif is downsampled to 15 fps afterwards (crisp for a
+# terminal, ~245 frames). Reproduce that step with:
+#   ffmpeg -y -i assets/install.gif -vf "fps=15,palettegen=stats_mode=full" /tmp/p.png
+#   ffmpeg -y -i assets/install.gif -i /tmp/p.png \
+#     -lavfi "fps=15[x];[x][1:v]paletteuse=dither=none" assets/install.gif
 
 Output assets/install.gif
 Require ./update-claude-desktop.sh
