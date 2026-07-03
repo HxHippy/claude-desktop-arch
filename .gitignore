@@ -1,0 +1,6 @@
+# build / download artifacts
+*.deb
+data.tar.*
+control.tar.*
+debian-binary
+/tmp/
