@@ -76,6 +76,25 @@ It installs `qemu-system-x86`, `edk2-ovmf`, and `virtiofsd` if missing, then sym
 
 KVM acceleration needs `/dev/kvm` access — the script checks it and tells you to join the `kvm` group if you haven't. The symlinks point at Arch package files, so they survive Claude Desktop upgrades.
 
+## What's tested vs. what isn't
+
+Be honest about this before you run it on your machine.
+
+**Tested and verified** (on Arch, x86_64, Hyprland, kernel 6.x/7.x):
+
+- Full install and update path end to end via `update-claude-desktop.sh --force`: signature verify → index verify → download → `.deb` hash verify → extract → install. Resulting install checked: `chrome-sandbox` is setuid-root, the launcher wrapper is correct, the version stamp, desktop entry, and icons are all in place.
+- The GPG gate actually rejects tampering: a signed `InRelease` with a single flipped byte is refused; the clean one is accepted. Verification is not a no-op.
+- The input sanitiser rejects shell-injection attempts in the version string (`"; rm -rf /`, `$(...)`, `&& …`) while accepting real version formats.
+- `setup-cowork.sh` on Arch: package detection, path discovery, symlink creation, and the KVM readiness checks. Cowork's prerequisites are satisfied after running it.
+
+**Not tested / verify for yourself:**
+
+- **arm64.** The `aarch64` code path (firmware names, `qemu-efi-aarch64`) is by inspection only. It has not been run on real arm64 hardware.
+- **Non-Arch distros.** `update-claude-desktop.sh` is written to be distro-agnostic, but only Arch has been exercised. `setup-cowork.sh` is Arch-specific (it uses `pacman`).
+- **Desktops other than Hyprland.** The keyring fix is correct in principle for any non-GNOME/KDE session (sway, COSMIC, …), but only Hyprland was tested live.
+- **A real Cowork VM boot to a working session.** The host prerequisites are verified; a full guest boot depends on your signed-in account and hardware.
+- **Install atomicity.** The installer does `rm -rf /opt/claude-desktop` before copying the new files. If it dies mid-install (disk full, killed process), the previous install is already gone — re-run to recover. It is not a rollback-safe atomic swap.
+
 ## Requirements
 
 - Arch Linux (or a pacman-based derivative), x86_64 or arm64
