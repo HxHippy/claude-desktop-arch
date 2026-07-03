@@ -115,6 +115,10 @@ Cowork runs agent work inside a local QEMU/KVM VM. If you see *"Virtualization i
 ./setup-cowork.sh
 ```
 
+<p align="center">
+  <img alt="Terminal recording: setup-cowork.sh discovering Arch's QEMU/OVMF/virtiofsd paths, creating the compatibility symlinks, and reporting all readiness checks green" src="assets/cowork.gif" width="760">
+</p>
+
 It installs `qemu-system-x86`, `edk2-ovmf`, and `virtiofsd` if missing, then symlinks Arch's files to the Debian paths the app probes:
 
 | App expects | Arch ships | Bridge |
