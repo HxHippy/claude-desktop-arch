@@ -1,9 +1,10 @@
 # Claude Desktop on Arch Linux
 
 <p align="center">
+  <a href="https://github.com/HxHippy/claude-desktop-arch/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/HxHippy/claude-desktop-arch?label=release&color=blue"></a>
   <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg">
   <img alt="Platform: Arch Linux" src="https://img.shields.io/badge/platform-Arch%20Linux-1793D1?logo=archlinux&logoColor=white">
-  <img alt="Arch: x86_64" src="https://img.shields.io/badge/arch-x86__64%20tested-informational">
+  <img alt="Arch: x86_64 tested" src="https://img.shields.io/badge/arch-x86__64%20tested-informational">
   <img alt="Shell: Bash" src="https://img.shields.io/badge/shell-Bash-4EAA25?logo=gnubash&logoColor=white">
   <img alt="Install: GPG verified" src="https://img.shields.io/badge/install-GPG%20verified-success">
   <img alt="Status: unofficial" src="https://img.shields.io/badge/status-unofficial-orange">
@@ -38,6 +39,7 @@ cd claude-desktop-arch
 - [How the install works](#how-the-install-works)
 - [The keyring fix](#the-keyring-fix)
 - [Cowork (local VM)](#cowork-local-vm)
+- [Security](#security)
 - [What's tested vs. what isn't](#whats-tested-vs-what-isnt)
 - [Requirements](#requirements)
 - [Uninstall](#uninstall)
@@ -65,6 +67,12 @@ Nothing here weakens the app's security model. The Chromium sandbox stays on, si
 git clone https://github.com/HxHippy/claude-desktop-arch
 cd claude-desktop-arch
 ./update-claude-desktop.sh
+```
+
+Prefer a pinned version? Clone the latest [release](https://github.com/HxHippy/claude-desktop-arch/releases) tag instead:
+
+```sh
+git clone --branch v1.0.0 https://github.com/HxHippy/claude-desktop-arch
 ```
 
 Then launch from your app menu or run `claude-desktop`, and sign in.
@@ -129,6 +137,18 @@ It installs `qemu-system-x86`, `edk2-ovmf`, and `virtiofsd` if missing, then sym
 | `qemu-system-x86_64` on PATH | `/usr/bin/qemu-system-x86_64` | already correct |
 
 KVM acceleration needs `/dev/kvm` access — the script checks it and tells you to join the `kvm` group if you haven't. The symlinks point at Arch package files, so they survive Claude Desktop upgrades.
+
+## Security
+
+Installing outside a package manager should not mean lowering your guard. The whole point of this repo is that it doesn't.
+
+- **Authenticity is signature-chained.** Every install verifies Anthropic's GPG signature and chains it down to the `.deb` hash; a bare checksum is never trusted. Details in [How the install works](#how-the-install-works).
+- **Auditable trust root.** The signing key is pinned by fingerprint (`31DD DE24 … 1A7E CACE`) inside the script. Verify it once against Anthropic's published fingerprint and you own the trust decision.
+- **The sandbox stays on.** `chrome-sandbox` is restored setuid-root; `--no-sandbox` is never used.
+- **Least privilege.** Files land in root-owned `/opt`; `sudo` is requested only for the install step. A compromised user account can't rewrite the installed binary.
+- **Secrets encrypted at rest.** Sign-in goes to your libsecret keyring, not Chromium's plaintext fallback.
+- **VM isolation is untouched.** Cowork setup only points the app at Arch's official firmware and `virtiofsd`; the QEMU/KVM boundary is unchanged.
+- **No secrets in the repo.** Every commit is scanned; the only key shipped is Anthropic's *public* signing key.
 
 ## What's tested vs. what isn't
 
